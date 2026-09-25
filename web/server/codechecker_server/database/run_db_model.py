@@ -181,6 +181,12 @@ class Run(Base):
         if self.duration == -1:
             self.duration = ceil((datetime.now() - self.date).total_seconds())
 
+    labels = relationship(
+        'RunLabel',
+        secondary='run_to_run_labels',
+        back_populates='runs'
+    )
+
 
 class RunLock(Base):
     """
@@ -693,3 +699,30 @@ class FilterPreset(Base):
     def __init__(self, preset_name, report_filter):
         self.preset_name = preset_name
         self.report_filter = report_filter
+
+class RunLabel(Base):
+    __tablename__ = 'run_labels'
+
+    id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True
+    )
+    label_name = Column(String, nullable=False, unique=True, index=True)
+    description = Column(String, nullable=True)
+
+    def __init__(self, label_name, description=None):
+        self.label_name = label_name
+        self.description = description
+
+    runs = relationship(
+        'Run',
+        secondary='run_to_run_labels',
+        back_populates='labels'
+    )
+
+RunToRunLabels = Table(
+    'run_to_run_labels',
+    Base.metadata,
+    Column('run_id', BigInteger().with_variant(Integer, "sqlite"), ForeignKey('runs.id', ondelete='CASCADE'), primary_key=True),
+    Column('run_label_id', BigInteger().with_variant(Integer, "sqlite"), ForeignKey('run_labels.id', ondelete='CASCADE'), primary_key=True)
+)
